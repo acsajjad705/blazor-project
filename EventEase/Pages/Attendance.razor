@@ -1,0 +1,64 @@
+@page "/attendance"
+@inject EventEase.Services.EventService EventsSvc
+
+<h3>Attendance</h3>
+
+<div class="mb-2">
+    <label>Select event</label>
+    <InputSelect class="form-select" @bind-Value="SelectedEventIdString" @onchange="LoadAttendees">
+        <option value="">-- choose --</option>
+        @foreach (var e in EventsSvc.GetEvents())
+        {
+            <option value="@e.Id">@e.Name (@e.Date.ToShortDateString())</option>
+        }
+    </InputSelect>
+</div>
+
+@if (Attendees is not null && Attendees.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Present</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in Attendees)
+            {
+                <tr>
+                    <td>@a.FullName</td>
+                    <td>@a.Email</td>
+                    <td>
+                        <input type="checkbox" checked="@a.Present" @onchange="(e) => ToggleAttendance(a, e)" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else if (!string.IsNullOrEmpty(SelectedEventIdString))
+{
+    <p>No attendees yet for this event.</p>
+}
+
+@code {
+    private string? SelectedEventIdString { get; set; }
+    private List<EventEase.Models.Attendee> Attendees { get; set; } = new();
+
+    private void LoadAttendees(ChangeEventArgs _)
+    {
+        if (Guid.TryParse(SelectedEventIdString, out var id))
+        {
+            Attendees = EventsSvc.GetAttendeesForEvent(id).ToList();
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleAttendance(EventEase.Models.Attendee attendee, ChangeEventArgs e)
+    {
+        var isChecked = e?.Value?.ToString()?.ToLowerInvariant() == "true";
+        EventsSvc.MarkAttendance(attendee.Id, isChecked);
+    }
+}
