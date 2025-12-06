@@ -1,0 +1,56 @@
+@page "/events"
+@inject EventEase.Services.EventService EventsSvc
+@inject EventEase.Services.SessionState Session
+
+<h3>Events</h3>
+
+<div class="row">
+    @foreach (var e in EventsSvc.GetEvents())
+    {
+        <div class="col-12 col-md-6">
+            <div class="border p-2 mb-2">
+                <strong>@e.Name</strong>
+                <div>@e.Date.ToShortDateString() — @e.Location</div>
+                <div class="text-muted">@e.Description</div>
+                <button class="btn btn-link p-0" @onclick="() => SelectEvent(e.Id)">Select</button>
+            </div>
+        </div>
+    }
+</div>
+
+<h4 class="mt-4">Create or edit event</h4>
+<EventCard EventModel="@EditableEvent" OnEventSaved="SaveEvent" />
+
+@code {
+    private EventEase.Models.Event EditableEvent { get; set; } = new();
+
+    private void SelectEvent(Guid id)
+    {
+        Session.SetLastEvent(id);
+        var selected = EventsSvc.GetEvent(id);
+        if (selected is not null)
+            EditableEvent = new EventEase.Models.Event
+            {
+                Id = selected.Id,
+                Name = selected.Name,
+                Date = selected.Date,
+                Location = selected.Location,
+                Description = selected.Description
+            };
+    }
+
+    private void SaveEvent(EventEase.Models.Event e)
+    {
+        if (e.Id == Guid.Empty)
+        {
+            e.Id = Guid.NewGuid();
+            EventsSvc.AddEvent(e);
+        }
+        else
+        {
+            EventsSvc.UpdateEvent(e);
+        }
+        EditableEvent = new EventEase.Models.Event();
+        StateHasChanged();
+    }
+}
