@@ -1,0 +1,41 @@
+@using EventEase.Models
+@inherits ComponentBase
+
+<div class="card">
+    <div class="card-body">
+        <InputText @bind-Value="EventModel.Name" class="form-control" placeholder="Event name" />
+        <InputDate @bind-Value="EventModel.Date" class="form-control" />
+        <InputText @bind-Value="EventModel.Location" class="form-control" placeholder="Location" />
+        <InputTextArea @bind-Value="EventModel.Description" class="form-control" placeholder="Description" />
+        <div class="mt-2">
+            <button class="btn btn-primary" @onclick="OnSave">Save</button>
+            <button class="btn btn-secondary ms-2" @onclick="OnReset">Reset</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Event EventModel { get; set; } = new();
+
+    [Parameter] public EventCallback<Event> OnEventSaved { get; set; }
+
+    private async Task OnSave()
+    {
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(EventModel.Name) ||
+            string.IsNullOrWhiteSpace(EventModel.Location))
+        {
+            return;
+        }
+        await OnEventSaved.InvokeAsync(EventModel);
+    }
+
+    private void OnReset()
+    {
+        EventModel = new Event
+        {
+            Date = DateTime.Today.AddDays(1)
+        };
+        StateHasChanged();
+    }
+}
