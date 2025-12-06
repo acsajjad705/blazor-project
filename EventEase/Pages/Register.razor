@@ -1,0 +1,58 @@
+@page "/register"
+@inject EventEase.Services.EventService EventsSvc
+@inject EventEase.Services.SessionState Session
+
+<h3>Registration</h3>
+
+<EditForm Model="@Registration" OnValidSubmit="@OnSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>Full name</label>
+        <InputText class="form-control" @bind-Value="Registration.FullName" />
+    </div>
+
+    <div class="mb-2">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="Registration.Email" />
+    </div>
+
+    <div class="mb-2">
+        <label>Select event</label>
+        <InputSelect class="form-select" @bind-Value="SelectedEventIdString">
+            <option value="">-- choose --</option>
+            @foreach (var e in EventsSvc.GetEvents())
+            {
+                <option value="@e.Id">@e.Name (@e.Date.ToShortDateString())</option>
+            }
+        </InputSelect>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Register</button>
+</EditForm>
+
+@code {
+    private EventEase.Models.Attendee Registration { get; set; } = new();
+    private string? SelectedEventIdString { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Session.LastSelectedEventId is Guid id)
+            SelectedEventIdString = id.ToString();
+    }
+
+    private void OnSubmit()
+    {
+        if (Guid.TryParse(SelectedEventIdString, out var eventId))
+        {
+            Registration.EventId = eventId;
+            EventsSvc.AddAttendee(Registration);
+            if (!string.IsNullOrWhiteSpace(Registration.FullName))
+                Session.SetUser(Registration.FullName);
+
+            Registration = new EventEase.Models.Attendee();
+            SelectedEventIdString = null;
+        }
+    }
+}
